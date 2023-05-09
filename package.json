@@ -1,0 +1,47 @@
+{
+  "name": "sc_minidao",
+  "version": "1.0.0",
+  "description": "Will contain miniDAO versions, test, compile and deploy files.",
+  "main": "index.js",
+  "devDependencies": {
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/providers": "^5.7.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.5",
+    "@nomicfoundation/hardhat-toolbox": "^1.0.2",
+    "@nomiclabs/hardhat-ethers": "^2.1.1",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@typechain/ethers-v5": "^10.1.0",
+    "@typechain/hardhat": "^6.1.2",
+    "chai": "^4.3.6",
+    "dotenv": "^16.0.3",
+    "ethers": "^5.7.0",
+    "hardhat": "^2.11.0",
+    "hardhat-gas-reporter": "^1.0.9",
+    "solidity-coverage": "^0.7.21",
+    "typechain": "^8.1.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/takadao/sc_minidao.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/takadao/sc_minidao/issues"
+  },
+  "homepage": "https://gitlab.com/takadao/sc_minidao#readme",
+  "dependencies": {
+    "@chainlink/contracts": "^0.4.2",
+    "@openzeppelin/contracts": "^4.6.0",
+    "crypto": "^1.0.1",
+    "erc-20-abi": "^1.0.0",
+    "exceljs": "^4.3.0",
+    "hardhat-helpers": "^0.1.37",
+    "hardhat-tracer": "^1.1.0-rc.9",
+    "xlsx": "^0.18.5"
+  }
+}
