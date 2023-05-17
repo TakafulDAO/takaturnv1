@@ -1,7 +1,7 @@
 {
-  "name": "sc_minidao",
+  "name": "takadao.takaturn.contracts",
   "version": "1.0.0",
-  "description": "Will contain miniDAO versions, test, compile and deploy files.",
+  "description": "Collection of smart contracts deployed in Takaturn",
   "main": "index.js",
   "devDependencies": {
     "@ethersproject/abi": "^5.7.0",
@@ -26,14 +26,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/takadao/sc_minidao.git"
+    "url": "git+https://github.com/TakafulDAO/takaturn.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://gitlab.com/takadao/sc_minidao/issues"
+    "url": "https://github.com/TakafulDAO/takaturn/issues"
   },
-  "homepage": "https://gitlab.com/takadao/sc_minidao#readme",
+  "homepage": "https://github.com/TakafulDAO/takaturn#readme",
   "dependencies": {
     "@chainlink/contracts": "^0.4.2",
     "@openzeppelin/contracts": "^4.8.3",
