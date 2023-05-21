@@ -86,9 +86,13 @@ contract Fund is IFund, Ownable {
         transferOwnership(Ownable(_sender).owner());
         
         // Set and track participants
-        for (uint i = 0; i < _participantsArray.length; i++) {
+        uint256 _participantsArrayLength = _participantsArray.length;
+        for (uint i; i < _participantsArrayLength; ) {
             EnumerableSet.add(_participants, _participantsArray[i]);
             isParticipant[_participantsArray[i]] = true;
+            unchecked {
+                ++i;
+            }
         }
         beneficiariesOrder = _participantsArray;
 
@@ -132,7 +136,8 @@ contract Fund is IFund, Ownable {
         // To maintain the order and to properly push defaulters to the back based on that same order
         // And we make sure that existing defaulters are ignored
         address[] memory currentParticipants = beneficiariesOrder;
-        for (uint i = 0; i < currentParticipants.length; i++) {
+        uint256 currentParticipantsLength = currentParticipants.length;
+        for (uint i; i < currentParticipantsLength; ) {
             address p = currentParticipants[i];
             if (paidThisCycle[p]) {
                 // check where to restore the defaulter to, participants or beneficiaries
@@ -149,6 +154,9 @@ contract Fund is IFund, Ownable {
             }
             else if (!EnumerableSet.contains(_defaulters, p)){
                 _defaultParticipant(p);
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -310,8 +318,11 @@ contract Fund is IFund, Ownable {
         
         currentCycle++;
         uint length = beneficiariesOrder.length;
-        for (uint i = 0; i < length; i++) {
+        for (uint i; i < length; ) {
             paidThisCycle[beneficiariesOrder[i]] = false;
+            unchecked {
+                ++i;
+            }
         }
 
         _setState(States.AcceptingContributions);
@@ -323,13 +334,18 @@ contract Fund is IFund, Ownable {
     /// @notice function to attempt to make autopayers pay their contribution
     function _autoPay() internal {
         address[] memory autoPayers = beneficiariesOrder;
+        uint256 autoPayersLength = autoPayers.length;
         uint amount = contributionAmount;
-        for (uint i = 0; i < autoPayers.length; i++) {
-            if (autoPayEnabled[autoPayers[i]] && 
+        for (uint i; i < autoPayersLength; ) {
+            if (
+                autoPayEnabled[autoPayers[i]] &&
                 !paidThisCycle[autoPayers[i]] &&
                 amount <= stableToken.allowance(autoPayers[i], address(this)) &&
                 amount <= stableToken.balanceOf(autoPayers[i])) {
                 _payContribution(autoPayers[i], autoPayers[i]);
+            }
+            unchecked {
+                ++i;
             }
         }
     }
@@ -373,20 +389,24 @@ contract Fund is IFund, Ownable {
         // check if there are any participants left, else use the defaulters
         address selectedBeneficiary = address(0);
         address[] memory arrayToCheck = beneficiariesOrder;
+        uint256 arrayToCheckLength = arrayToCheck.length;
         uint beneficiaryIndex = 0;
-        for (uint i = 0; i < arrayToCheck.length; i++) { 
+        for (uint i; i < arrayToCheckLength; ) {
             address b = arrayToCheck[i];
             if (!isBeneficiary[b]) {
                 selectedBeneficiary = b;
                 beneficiaryIndex = i;
                 break;
             }
+            unchecked {
+                ++i;
+            }
         }
 
         // If the defaulter didn't pay this cycle, we move the first elligible beneficiary forward and everyone in between forward
         if (!paidThisCycle[selectedBeneficiary]) {
             // Find the index of the beneficiary to move to the end
-            for (uint i = beneficiaryIndex; i < arrayToCheck.length; i++) {
+            for (uint i = beneficiaryIndex; i < arrayToCheckLength; ) {
                 address b = arrayToCheck[i];
                 // Find the first eligible beneficiary
                 if (paidThisCycle[b]) {
@@ -401,6 +421,9 @@ contract Fund is IFund, Ownable {
                     beneficiariesOrder = newOrder;
                     break;
                 }
+                unchecked {
+                    ++i;
+                }
             }
         }
 
@@ -409,11 +432,15 @@ contract Fund is IFund, Ownable {
             address[] memory expellants = collateral.requestContribution(selectedBeneficiary, 
                                                                          EnumerableSet.values(_defaulters));
 
-            for (uint i = 0; i < expellants.length; i++) {
+            uint256 expellantsLength = expellants.length;
+            for (uint i; i < expellantsLength; ) {
                 if (expellants[i] == address(0)) {
                     continue;
                 }
                 _expelDefaulter(expellants[i]);
+                unchecked {
+                    ++i;
+                }
             }
         }
         
@@ -429,9 +456,13 @@ contract Fund is IFund, Ownable {
         // Get the amount of participants that paid this cycle, and add that amount to the beneficiary's pool
         uint paidCount = 0;
         address[] memory allParticipants = beneficiariesOrder; // Use beneficiariesOrder here because it contains all active participants in a single array
-        for (uint i = 0; i < allParticipants.length; i++) {
+        uint256 allParticipantsLength = allParticipants.length;
+        for (uint i; i < allParticipantsLength; ) {
             if (paidThisCycle[allParticipants[i]]) {
                 paidCount++;
+            }
+            unchecked {
+                ++i;
             }
         }
  
@@ -447,13 +478,19 @@ contract Fund is IFund, Ownable {
     /// @param _beneficiary The defaulter that could have been beneficiary
     function _removeBeneficiaryFromOrder(address _beneficiary) internal {
         address[] memory arrayToCheck = beneficiariesOrder;
+        uint256 arrayToCheckLength = arrayToCheck.length;
         address[] memory newArray = new address[](arrayToCheck.length - 1);
         uint j = 0;
-        for (uint i = 0; i < arrayToCheck.length; i++) {
+        for (uint i; i < arrayToCheckLength; ) {
             address b = arrayToCheck[i];
             if (b != _beneficiary) {
                 newArray[j] = b;
-                j++;
+                unchecked {
+                    ++j;
+                }
+            }
+            unchecked {
+                ++i;
             }
         }
 

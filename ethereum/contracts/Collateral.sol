@@ -170,7 +170,7 @@ contract Collateral is ICollateral, Ownable {
 
         // Determine who will be expelled and who will just pay the contribution
         // From their collateral.
-        for (uint i = 0; i < defaulters.length; i++) {
+        for (uint i; i < defaulters.length; ) {
             currentDefaulter = defaulters[i];
             wasBeneficiary = _fundInstance.isBeneficiary(
                 currentDefaulter
@@ -198,12 +198,16 @@ contract Collateral is ICollateral, Ownable {
                 collateralMembersBank[currentDefaulter] -= contributionAmountWei;
                 collateralPaymentBank[ben] += contributionAmountWei;
             }
+            unchecked {
+                ++i;
+            }
         }
 
         totalParticipants = totalParticipants - totalExpellants;
 
         // Divide and Liquidate
-        for (uint i = 0; i < participants.length; i++) {
+        uint256 participantsLength = participants.length;
+        for (uint i; i < participantsLength; ) {
             currentParticipant = participants[i];
             if (
                 !_fundInstance.isBeneficiary(currentParticipant) &&
@@ -212,14 +216,20 @@ contract Collateral is ICollateral, Ownable {
                 nonBeneficiaries[nonBeneficiaryCounter] = currentParticipant;
                 nonBeneficiaryCounter++;
             }
+            unchecked {
+                ++i;
+            }
         }
 
         // Finally, divide the share equally among non-beneficiaries
         if (nonBeneficiaryCounter > 0) {
             // This case can only happen when what?
             share = share / nonBeneficiaryCounter;
-            for (uint i = 0; i < nonBeneficiaryCounter; i++) {
+            for (uint i; i < nonBeneficiaryCounter; ) {
                 collateralPaymentBank[nonBeneficiaries[i]] += share;
+                unchecked {
+                    ++i;
+                }
             }
         }
 
@@ -283,10 +293,14 @@ contract Collateral is ICollateral, Ownable {
             "Can't empty yet"
         );
 
-        for (uint i = 0; i < participants.length; i++) {
+        uint256 participantsLength = participants.length;
+        for (uint i; i < participantsLength; ) {
             address participant = participants[i];
             collateralMembersBank[participant] = 0;
             collateralPaymentBank[participant] = 0;
+            unchecked {
+                ++i;
+            }
         }
         _setState(States.Closed);
 
