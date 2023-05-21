@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0        
 
 pragma solidity ^0.8.9;
 
@@ -33,18 +33,18 @@ contract Fund is IFund, Ownable {
     event OnTotalParticipantsUpdated(uint indexed newLength); // Emits when the total participants lengths has changed from its initial value
     event OnAutoPayToggled(address indexed participant, bool indexed enabled); // Emits when a participant succesfully toggles autopay
 
-    uint public constant version = 2; // The version of the contract
+    uint constant public version = 2; // The version of the contract
 
-    ICollateral public immutable collateral; // Instance of the collateral
-    IERC20 public immutable stableToken; // Instance of the stable token
+    ICollateral immutable public collateral; // Instance of the collateral
+    IERC20 immutable public stableToken; // Instance of the stable token
 
     States public currentState = States.InitializingFund; // Variable to keep track of the different States
 
     uint public totalAmountOfCycles; // Amount of cycles that this fund will have
     uint public totalParticipants; // Total amount of starting participants
-    uint public immutable cycleTime; // time for a single cycle in seconds, default is 30 days
-    uint public immutable contributionAmount; // amount in stable token currency, 6 decimals
-    uint public immutable contributionPeriod; // time for participants to contribute this cycle
+    uint immutable public cycleTime; // time for a single cycle in seconds, default is 30 days
+    uint immutable public contributionAmount; // amount in stable token currency, 6 decimals
+    uint immutable public contributionPeriod; // time for participants to contribute this cycle
 
     mapping(address => bool) public isParticipant; // Mapping to keep track of who's a participant or not
     mapping(address => bool) public isBeneficiary; // Mapping to keep track of who's a beneficiary or not
@@ -84,15 +84,11 @@ contract Fund is IFund, Ownable {
         stableToken = IERC20(_stableTokenAddress);
 
         transferOwnership(Ownable(_sender).owner());
-
+        
         // Set and track participants
-        uint256 participantsArrayLength = _participantsArray.length;
-        for (uint i; i < participantsArrayLength; ) {
+        for (uint i = 0; i < _participantsArray.length; i++) {
             EnumerableSet.add(_participants, _participantsArray[i]);
             isParticipant[_participantsArray[i]] = true;
-            unchecked {
-                ++i;
-            }
         }
         beneficiariesOrder = _participantsArray;
 
@@ -107,12 +103,13 @@ contract Fund is IFund, Ownable {
 
         // Starts the first cycle
         _startNewCycle();
-
+        
         // Set timestamp of deployment, which will be used to determine cycle times
         // We do this after starting the first cycle to make sure the first cycle starts smoothly
         fundStart = block.timestamp;
     }
 
+        
     /// @notice starts a new cycle manually called by the owner. Only the first cycle starts automatically upon deploy
     function startNewCycle() external onlyOwner {
         _startNewCycle();
@@ -121,10 +118,8 @@ contract Fund is IFund, Ownable {
     /// @notice Must be called at the end of the contribution period after the time has passed by the owner
     function closeFundingPeriod() external onlyOwner {
         // Current cycle minus 1 because we use the previous cycle time as start point then add contribution period
-        require(
-            block.timestamp > cycleTime * (currentCycle - 1) + fundStart + contributionPeriod,
-            "Still time to contribute"
-        );
+        require(block.timestamp > cycleTime * (currentCycle - 1) + fundStart + contributionPeriod, 
+                "Still time to contribute");
         require(currentState == States.AcceptingContributions, "Wrong state");
 
         // We attempt to make the autopayers pay their contribution right away
@@ -137,45 +132,42 @@ contract Fund is IFund, Ownable {
         // To maintain the order and to properly push defaulters to the back based on that same order
         // And we make sure that existing defaulters are ignored
         address[] memory currentParticipants = beneficiariesOrder;
-        uint256 currentParticipantsLength;
-        for (uint i; i < currentParticipantsLength; ) {
+        for (uint i = 0; i < currentParticipants.length; i++) {
             address p = currentParticipants[i];
             if (paidThisCycle[p]) {
                 // check where to restore the defaulter to, participants or beneficiaries
                 if (isBeneficiary[p]) {
                     EnumerableSet.add(_beneficiaries, p);
-                } else {
+                }
+                else {
                     EnumerableSet.add(_participants, p);
                 }
 
                 if (EnumerableSet.remove(_defaulters, p)) {
                     emit OnParticipantUndefaulted(p);
                 }
-            } else if (!EnumerableSet.contains(_defaulters, p)) {
-                _defaultParticipant(p);
             }
-            unchecked {
-                ++i;
+            else if (!EnumerableSet.contains(_defaulters, p)){
+                _defaultParticipant(p);
             }
         }
 
         // Once we decided who defaulted and who paid, we can select the beneficiary for this cycle
         _selectBeneficiary();
 
-        if (!(currentCycle < totalAmountOfCycles)) {
-            // If all cycles have passed, and the last cycle's time has passed, close the fund
+        if (!(currentCycle < totalAmountOfCycles)) { // If all cycles have passed, and the last cycle's time has passed, close the fund
             _closeFund();
             return;
         }
     }
-
+    
     /// @notice Fallback function, if the internal call fails somehow and the state gets stuck, allow owner to call the function again manually
     /// @dev This shouldn't happen, but is here in case there's an edge-case we didn't take into account, can possibly be removed in the future
     function selectBeneficiary() external onlyOwner {
         require(currentState == States.ChoosingBeneficiary, "Wrong state");
         _selectBeneficiary();
     }
-
+    
     /// @notice called by the owner to close the fund for emergency reasons.
     function closeFund() external onlyOwner {
         //require (!(currentCycle < totalAmountOfCycles), "Not all cycles have happened yet");
@@ -186,10 +178,7 @@ contract Fund is IFund, Ownable {
     //         this with the assumption that beneficiaries can't claim it themselves due to losing their keys for example,
     //         and prevent the fund to be stuck in limbo
     function emptyFundAfterEnd() external onlyOwner {
-        require(
-            currentState == States.FundClosed && block.timestamp > fundEnd + 180 days,
-            "Can't empty yet"
-        );
+        require(currentState == States.FundClosed && block.timestamp > fundEnd + 180 days  , "Can't empty yet");
 
         uint balance = stableToken.balanceOf(address(this));
         if (balance > 0) {
@@ -222,17 +211,15 @@ contract Fund is IFund, Ownable {
         require(!paidThisCycle[participant], "Already paid for cycle");
         _payContribution(msg.sender, participant);
     }
-
+    
     /// @notice Called by the beneficiary to withdraw the fund
     /// @dev This follows the pull-over-push pattern.
     function withdrawFund() external {
-        require(
-            currentState == States.FundClosed || paidThisCycle[msg.sender],
-            "You must pay your cycle before withdrawing"
-        );
+        require(currentState == States.FundClosed || 
+                paidThisCycle[msg.sender], "You must pay your cycle before withdrawing");
 
         bool hasFundPool = beneficiariesPool[msg.sender] > 0;
-        (, uint collateralPool, ) = collateral.getParticipantSummary(msg.sender);
+        (, uint collateralPool,) = collateral.getParticipantSummary(msg.sender);
         bool hasCollateralPool = collateralPool > 0;
         require(hasFundPool || hasCollateralPool, "Nothing to withdraw");
 
@@ -241,8 +228,12 @@ contract Fund is IFund, Ownable {
             uint transferAmount = beneficiariesPool[msg.sender];
             uint contractBalance = stableToken.balanceOf(address(this));
             if (contractBalance < transferAmount) {
-                revert InsufficientBalance({available: contractBalance, required: transferAmount});
-            } else {
+                revert InsufficientBalance({
+                    available: contractBalance,
+                    required: transferAmount
+                });
+            }
+            else {
                 beneficiariesPool[msg.sender] = 0;
                 stableToken.transfer(msg.sender, transferAmount); // Untrusted
             }
@@ -259,9 +250,11 @@ contract Fund is IFund, Ownable {
         uint cycleEndTimestamp = cycleTime * currentCycle + fundStart;
         if (block.timestamp > cycleEndTimestamp) {
             return 0;
-        } else {
+        } 
+        else {
             return cycleEndTimestamp - block.timestamp;
         }
+
     }
 
     // @notice returns the time left to contribute for this cycle
@@ -271,13 +264,11 @@ contract Fund is IFund, Ownable {
         }
 
         // Current cycle minus 1 because we use the previous cycle time as start point then add contribution period
-        uint contributionEndTimestamp = cycleTime *
-            (currentCycle - 1) +
-            fundStart +
-            contributionPeriod;
+        uint contributionEndTimestamp = cycleTime * (currentCycle - 1) + fundStart + contributionPeriod;
         if (block.timestamp > contributionEndTimestamp) {
             return 0;
-        } else {
+        }
+        else {
             return contributionEndTimestamp - block.timestamp;
         }
     }
@@ -294,22 +285,18 @@ contract Fund is IFund, Ownable {
 
     // @notice function to get cycle information of a specific participant
     // @param participant the user to get the info from
-    function getParticipantSummary(
-        address participant
-    ) external view returns (uint, bool, bool, bool, bool) {
-        return (
-            beneficiariesPool[participant],
-            isBeneficiary[participant],
-            paidThisCycle[participant],
-            autoPayEnabled[participant],
-            isParticipant[participant]
-        );
+    function getParticipantSummary(address participant) external view returns (uint, bool, bool, bool, bool) {
+        return (beneficiariesPool[participant], 
+                isBeneficiary[participant], 
+                paidThisCycle[participant], 
+                autoPayEnabled[participant], 
+                isParticipant[participant]);
     }
 
     /// @notice updates the state according to the input and makes sure the state can't be changed if the fund is closed. Also emits an event that this happened
     /// @param newState The new state of the fund
     function _setState(States newState) internal {
-        require(currentState != States.FundClosed, "Fund closed");
+        require (currentState != States.FundClosed, "Fund closed");
         currentState = newState;
         emit OnStateChanged(newState);
     }
@@ -317,26 +304,18 @@ contract Fund is IFund, Ownable {
     /// @notice This starts the new cycle and can only be called internally. Used upon deploy
     function _startNewCycle() internal {
         // currentCycle is 0 when this is called for the first time
-        require(
-            block.timestamp > cycleTime * currentCycle + fundStart,
-            "Too early to start new cycle"
-        );
-        require(
-            currentState == States.InitializingFund || currentState == States.CycleOngoing,
-            "Wrong state"
-        );
-
+        require(block.timestamp > cycleTime * currentCycle + fundStart, "Too early to start new cycle");
+        require(currentState == States.InitializingFund || 
+                currentState == States.CycleOngoing, "Wrong state");
+        
         currentCycle++;
         uint length = beneficiariesOrder.length;
-        for (uint i; i < length; ) {
+        for (uint i = 0; i < length; i++) {
             paidThisCycle[beneficiariesOrder[i]] = false;
-            unchecked {
-                ++i;
-            }
         }
 
         _setState(States.AcceptingContributions);
-
+        
         // We attempt to make the autopayers pay their contribution right away
         _autoPay();
     }
@@ -344,19 +323,13 @@ contract Fund is IFund, Ownable {
     /// @notice function to attempt to make autopayers pay their contribution
     function _autoPay() internal {
         address[] memory autoPayers = beneficiariesOrder;
-        uint256 autoPayersLength = autoPayers.length;
         uint amount = contributionAmount;
-        for (uint i; i < autoPayersLength; ) {
-            if (
-                autoPayEnabled[autoPayers[i]] &&
+        for (uint i = 0; i < autoPayers.length; i++) {
+            if (autoPayEnabled[autoPayers[i]] && 
                 !paidThisCycle[autoPayers[i]] &&
                 amount <= stableToken.allowance(autoPayers[i], address(this)) &&
-                amount <= stableToken.balanceOf(autoPayers[i])
-            ) {
+                amount <= stableToken.balanceOf(autoPayers[i])) {
                 _payContribution(autoPayers[i], autoPayers[i]);
-            }
-            unchecked {
-                ++i;
             }
         }
     }
@@ -368,7 +341,7 @@ contract Fund is IFund, Ownable {
         // Get the amount and do the actual transfer
         // This will only succeed if the sender approved this contract address beforehand
         uint amount = contributionAmount;
-
+        
         bool success = stableToken.transferFrom(payer, address(this), amount);
         require(success, "Contribution failed, did you approve stable token?");
 
@@ -388,7 +361,7 @@ contract Fund is IFund, Ownable {
             success = EnumerableSet.remove(_beneficiaries, defaulter);
         }
 
-        require(success, "Can't remove defaulter");
+        require (success, "Can't remove defaulter");
         EnumerableSet.add(_defaulters, defaulter);
 
         emit OnParticipantDefaulted(defaulter);
@@ -400,24 +373,20 @@ contract Fund is IFund, Ownable {
         // check if there are any participants left, else use the defaulters
         address selectedBeneficiary = address(0);
         address[] memory arrayToCheck = beneficiariesOrder;
-        uint256 arrayToCheckLength = arrayToCheck.length;
         uint beneficiaryIndex = 0;
-        for (uint i; i < arrayToCheckLength; ) {
+        for (uint i = 0; i < arrayToCheck.length; i++) { 
             address b = arrayToCheck[i];
             if (!isBeneficiary[b]) {
                 selectedBeneficiary = b;
                 beneficiaryIndex = i;
                 break;
             }
-            unchecked {
-                ++i;
-            }
         }
 
         // If the defaulter didn't pay this cycle, we move the first elligible beneficiary forward and everyone in between forward
         if (!paidThisCycle[selectedBeneficiary]) {
             // Find the index of the beneficiary to move to the end
-            for (uint i = beneficiaryIndex; i < arrayToCheckLength; ) {
+            for (uint i = beneficiaryIndex; i < arrayToCheck.length; i++) {
                 address b = arrayToCheck[i];
                 // Find the first eligible beneficiary
                 if (paidThisCycle[b]) {
@@ -432,31 +401,22 @@ contract Fund is IFund, Ownable {
                     beneficiariesOrder = newOrder;
                     break;
                 }
-                unchecked {
-                    ++i;
-                }
             }
         }
 
         // Request contribution from the collateral for those who haven't paid this cycle
         if (EnumerableSet.length(_defaulters) > 0) {
-            address[] memory expellants = collateral.requestContribution(
-                selectedBeneficiary,
-                EnumerableSet.values(_defaulters)
-            );
-            uint256 expellantsLength = expellants.length;
+            address[] memory expellants = collateral.requestContribution(selectedBeneficiary, 
+                                                                         EnumerableSet.values(_defaulters));
 
-            for (uint i; i < expellantsLength; ) {
+            for (uint i = 0; i < expellants.length; i++) {
                 if (expellants[i] == address(0)) {
                     continue;
                 }
                 _expelDefaulter(expellants[i]);
-                unchecked {
-                    ++i;
-                }
             }
         }
-
+        
         // Remove participant from participants set..
         if (EnumerableSet.remove(_participants, selectedBeneficiary)) {
             // ..Then add them to the benificiaries set
@@ -469,20 +429,16 @@ contract Fund is IFund, Ownable {
         // Get the amount of participants that paid this cycle, and add that amount to the beneficiary's pool
         uint paidCount = 0;
         address[] memory allParticipants = beneficiariesOrder; // Use beneficiariesOrder here because it contains all active participants in a single array
-        uint256 allParticipantsLength = allParticipants.length;
-        for (uint i; i < allParticipantsLength; ) {
+        for (uint i = 0; i < allParticipants.length; i++) {
             if (paidThisCycle[allParticipants[i]]) {
                 paidCount++;
             }
-            unchecked {
-                ++i;
-            }
         }
-
+ 
         // Award the beneficiary with the pool and update the lastBeneficiary
         beneficiariesPool[selectedBeneficiary] = contributionAmount * paidCount;
         lastBeneficiary = selectedBeneficiary;
-
+        
         emit OnBeneficiarySelected(selectedBeneficiary);
         _setState(States.CycleOngoing);
     }
@@ -491,17 +447,13 @@ contract Fund is IFund, Ownable {
     /// @param _beneficiary The defaulter that could have been beneficiary
     function _removeBeneficiaryFromOrder(address _beneficiary) internal {
         address[] memory arrayToCheck = beneficiariesOrder;
-        uint256 arrayToCheckLength = arrayToCheck.length;
         address[] memory newArray = new address[](arrayToCheck.length - 1);
         uint j = 0;
-        for (uint i; i < arrayToCheckLength; ) {
+        for (uint i = 0; i < arrayToCheck.length; i++) {
             address b = arrayToCheck[i];
             if (b != _beneficiary) {
                 newArray[j] = b;
                 j++;
-            }
-            unchecked {
-                ++i;
             }
         }
 
@@ -512,12 +464,9 @@ contract Fund is IFund, Ownable {
     /// @param expellant The address of the defaulter that will be expelled
     function _expelDefaulter(address expellant) internal {
         //require(msg.sender == address(collateral), "Caller is not collateral");
-        require(
-            isParticipant[expellant] && EnumerableSet.remove(_defaulters, expellant),
-            "Expellant not found"
-        );
-
-        // Expellants should only be in the defauters set so no need to touch the other sets
+        require (isParticipant[expellant] && EnumerableSet.remove(_defaulters, expellant), "Expellant not found");
+  
+          // Expellants should only be in the defauters set so no need to touch the other sets
         //require(EnumerableSet.remove(_defaulters, expellant), "Expellant not found");
 
         // Remove expellant from beneficiaries order
@@ -537,10 +486,10 @@ contract Fund is IFund, Ownable {
         uint newLength = totalParticipants - 1;
         totalParticipants = newLength;
         expelledParticipants++;
-
+        
         emit OnTotalParticipantsUpdated(newLength);
     }
-
+    
     /// @notice Internal function for close fund which is used by _startNewCycle & _chooseBeneficiary to cover some edge-cases
     function _closeFund() internal {
         fundEnd = block.timestamp;
