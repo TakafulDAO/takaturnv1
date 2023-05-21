@@ -1,7 +1,7 @@
 {
   "name": "takadao.takaturn.contracts",
   "version": "1.0.0",
-  "description": "Collection of smart contracts deployed in Takaturn",
+  "description": "Collection of Takaturn smart contracts deployed on Arbitrum One",
   "main": "index.js",
   "devDependencies": {
     "@ethersproject/abi": "^5.7.0",
