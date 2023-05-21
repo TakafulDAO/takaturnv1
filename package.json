@@ -28,7 +28,7 @@
     "type": "git",
     "url": "git+https://github.com/TakafulDAO/takaturn.git"
   },
-  "author": "",
+  "author": "Mohammed Haddouti <mohammed@takadao.io>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/TakafulDAO/takaturn/issues"
