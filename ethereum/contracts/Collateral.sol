@@ -206,7 +206,7 @@ contract Collateral is ICollateral, Ownable {
         totalParticipants = totalParticipants - totalExpellants;
 
         // Divide and Liquidate
-        uint256 participantsLength = participants.length;
+        uint participantsLength = participants.length;
         for (uint i; i < participantsLength; ) {
             currentParticipant = participants[i];
             if (
@@ -293,7 +293,7 @@ contract Collateral is ICollateral, Ownable {
             "Can't empty yet"
         );
 
-        uint256 participantsLength = participants.length;
+        uint participantsLength = participants.length;
         for (uint i; i < participantsLength; ) {
             address participant = participants[i];
             collateralMembersBank[participant] = 0;
